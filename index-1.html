@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>ADRI TE AMO 🌻✨</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif}
+body{touch-action:none}
+#space{position:fixed;inset:0}
+canvas{display:block}
+#loading{position:fixed;inset:0;z-index:999;background:radial-gradient(circle at center,#161000 0%,#030303 65%,#000 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffe66d;transition:opacity 1s}
+.loader{width:55px;height:55px;border-radius:50%;border:3px solid rgba(255,215,0,.15);border-top-color:#ffd700;animation:girar 1s linear infinite;margin-bottom:20px}
+@keyframes girar{to{transform:rotate(360deg)}}
+.loadingText{font-size:12px;letter-spacing:3px;text-align:center}
+#center{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;z-index:20;pointer-events:none;text-align:center}
+.mainTitle{font-size:clamp(45px,14vw,110px);font-weight:900;letter-spacing:4px;color:#fff7a8;text-shadow:0 0 8px #fff,0 0 20px #ffe600,0 0 40px #ffb300,0 0 80px #ff8c00;animation:respirar 3s ease-in-out infinite alternate}
+@keyframes respirar{from{transform:scale(.96)}to{transform:scale(1.04)}}
+#message{position:fixed;left:50%;bottom:25px;transform:translateX(-50%);width:90%;max-width:600px;z-index:20;text-align:center;color:#fff4a0;font-size:clamp(12px,3.5vw,18px);line-height:1.4;text-shadow:0 0 12px #ffb300;pointer-events:none}
+#help{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:20;color:rgba(255,255,255,.65);font-size:9px;letter-spacing:1.5px;text-align:center;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="loading"><div class="loader"></div><div class="loadingText">PREPARANDO EL UNIVERSO DE ADRI...</div></div>
+<div id="space"></div>
+<div id="center"><div class="mainTitle">ADRI TE AMO</div></div>
+<div id="help">ARRASTRA PARA GIRAR • PINZA PARA ACERCAR</div>
+<div id="message">1000 formas de decirte TE AMO jamás serán suficientes ❤️</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+if(!window.THREE){
+ document.querySelector(".loadingText").innerHTML="NO SE PUDO CARGAR EL UNIVERSO";
+}else{ iniciar(); }
+
+function iniciar(){
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,1000);
+camera.position.z=75;
+
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(0x000000);
+document.getElementById("space").appendChild(renderer.domElement);
+
+/* ESTRELLAS */
+const STAR_COUNT=1800;
+const starGeometry=new THREE.BufferGeometry();
+const starPositions=new Float32Array(STAR_COUNT*3);
+for(let i=0;i<STAR_COUNT;i++){
+ const r=100+Math.random()*300, t=Math.random()*Math.PI*2, p=Math.acos(2*Math.random()-1);
+ starPositions[i*3]=r*Math.sin(p)*Math.cos(t);
+ starPositions[i*3+1]=r*Math.sin(p)*Math.sin(t);
+ starPositions[i*3+2]=r*Math.cos(p);
+}
+starGeometry.setAttribute("position",new THREE.BufferAttribute(starPositions,3));
+const stars=new THREE.Points(starGeometry,new THREE.PointsMaterial({color:0xffffff,size:1.15,sizeAttenuation:true}));
+scene.add(stars);
+
+/* GALAXIA */
+const GALAXY_COUNT=900;
+const galaxyGeometry=new THREE.BufferGeometry();
+const galaxyPositions=new Float32Array(GALAXY_COUNT*3);
+for(let i=0;i<GALAXY_COUNT;i++){
+ const r=Math.pow(Math.random(),.65)*80, a=r*.12+Math.random()*.5;
+ galaxyPositions[i*3]=Math.cos(a)*r+(Math.random()-.5)*7;
+ galaxyPositions[i*3+1]=(Math.random()-.5)*8;
+ galaxyPositions[i*3+2]=Math.sin(a)*r+(Math.random()-.5)*7;
+}
+galaxyGeometry.setAttribute("position",new THREE.BufferAttribute(galaxyPositions,3));
+scene.add(new THREE.Points(galaxyGeometry,new THREE.PointsMaterial({color:0xffc94a,size:.85,transparent:true,opacity:.65})));
+
+/* ORBITAS */
+function crearOrbita(radio,inclinacion,opacidad){
+ const ring=new THREE.Mesh(
+  new THREE.RingGeometry(radio,radio+.08,96),
+  new THREE.MeshBasicMaterial({color:0xffd54f,transparent:true,opacity:opacidad,side:THREE.DoubleSide})
+ );
+ ring.rotation.x=Math.PI/2; ring.rotation.z=inclinacion; scene.add(ring); return ring;
+}
+crearOrbita(18,.2,.45); crearOrbita(28,-.35,.35); crearOrbita(40,.15,.28); crearOrbita(52,-.2,.20);
+
+/* GIRASOLES */
+const petalGeometry=new THREE.SphereGeometry(2.2,8,6);
+const petalMaterial=new THREE.MeshBasicMaterial({color:0xffd21f});
+const centerGeometry=new THREE.SphereGeometry(.9,8,6);
+const centerMaterial=new THREE.MeshBasicMaterial({color:0x9b5b00});
+
+function crearGirasol(){
+ const flower=new THREE.Group();
+ for(let i=0;i<12;i++){
+  const petal=new THREE.Mesh(petalGeometry,petalMaterial);
+  const a=i/12*Math.PI*2;
+  petal.position.set(Math.cos(a)*1.8,Math.sin(a)*1.8,0);
+  petal.scale.set(1,.48,.22);
+  petal.rotation.z=-a;
+  flower.add(petal);
+ }
+ const center=new THREE.Mesh(centerGeometry,centerMaterial);
+ center.position.z=.5; flower.add(center);
+ return flower;
+}
+const sunflowerSystem=new THREE.Group();
+const sunflowerBase=crearGirasol();
+for(let i=0;i<14;i++){
+ const flower=sunflowerBase.clone(), r=20+Math.random()*34, a=Math.random()*Math.PI*2;
+ flower.position.set(Math.cos(a)*r,(Math.random()-.5)*28,Math.sin(a)*r);
+ flower.scale.setScalar(.55+Math.random()*.65);
+ flower.userData.angle=a; flower.userData.radius=r; flower.userData.speed=.0002+Math.random()*.0003;
+ sunflowerSystem.add(flower);
+}
+scene.add(sunflowerSystem);
+
+/* TEXTOS */
+function crearTexto(texto,ancho=512,alto=96,font=34){
+ const canvas=document.createElement("canvas"); canvas.width=ancho; canvas.height=alto;
+ const ctx=canvas.getContext("2d");
+ ctx.clearRect(0,0,ancho,alto); ctx.font="bold "+font+"px Arial";
+ ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillStyle="#fff3a0";
+ ctx.shadowColor="#ffbf00"; ctx.shadowBlur=14; ctx.fillText(texto,ancho/2,alto/2);
+ const texture=new THREE.CanvasTexture(canvas); texture.minFilter=THREE.LinearFilter;
+ return new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true}));
+}
+
+const specialWords=[
+"MI CHEÑOLA","MI CHANGUITA","MI LOBA","SEÑORA DE BARIAS","MI FUTURA ESPOSA",
+"MI PERSONA FAVORITA","MI HOGAR","MI FELICIDAD","MI TODO","MI VIDA","MI FUTURO",
+"MI SUEÑO","MI PAZ","MI LUGAR SEGURO","SIEMPRE TÚ"
+];
+for(let i=0;i<specialWords.length;i++){
+ const text=crearTexto(specialWords[i]), a=i/specialWords.length*Math.PI*2, r=31+(i%3)*4;
+ text.position.set(Math.cos(a)*r,(i%5-2)*5,Math.sin(a)*r); text.scale.set(16,3,1); scene.add(text);
+}
+
+/* 1000 TE AMO */
+const languages=[
+"TE AMO","I LOVE YOU","JE T'AIME","TI AMO","ICH LIEBE DICH","EU TE AMO","TE QUIERO",
+"TE QUIERO MUCHO","Я ТЕБЯ ЛЮБЛЮ","愛してる","愛しています","大好き","사랑해","사랑합니다",
+"我爱你","我愛你","我喜欢你","أحبك","أحبك جداً","أعشقك","אני אוהב אותך","אני אוהבת אותך",
+"Σ' ΑΓΑΠΩ","ΣΕ ΑΓΑΠΩ","σε λατρεύω","मैं तुमसे प्यार करता हूँ","मैं तुमसे प्यार करती हूँ",
+"ฉันรักคุณ","ผมรักคุณ","ฉันรักเธอ","รักคุณ","aku cinta kamu","saya cintakan awak","mahal kita",
+"mahal na mahal kita","volim te","ljubim te","te iubesc","te iubesc mult","miluji tě",
+"mám tě rád","mám tě ráda","kocham cię","kocham ciebie","jag älskar dig","jeg elsker deg",
+"jeg elsker dig","rakastan sinua","ma armastan sind","aš tave myliu","es tevi mīlu","mīlu tevi",
+"t'estimo","t'estim","amo-te","eu amo-te","te dua","të dua","te sakam","men seni sevirem",
+"mən səni sevirəm","мен сені сүйемін","я кахаю цябе","사랑한다","愛してます","愛している",
+"我爱你一生一世","我好爱你","أحبك إلى الأبد","أحبك كثيراً","أحبك يا حبيبتي","σε αγαπώ για πάντα",
+"σε αγαπώ πολύ","te amo para siempre","te adoro","te quiero para siempre","i adore you",
+"i love you forever","i love you always","you are my love","you are my everything","you are my world",
+"je t'adore","je t'aime pour toujours","je t'aime mon amour","je t'aime beaucoup","ti amo per sempre",
+"ti adoro","ti amo tanto","ti amerò sempre","ich liebe dich für immer","ich liebe dich sehr",
+"du bist meine Liebe","du bist meine Welt","eu te amo para sempre","eu te adoro","eu te amo muito",
+"eu vou te amar sempre","te iubesc pentru totdeauna","te iubesc enorm","te iubesc din tot sufletul",
+"kocham cię na zawsze","kocham cię bardzo","kocham cię całym sercem","jag älskar dig för alltid",
+"jeg elsker deg for alltid","jeg elsker deg så mye","rakastan sinua ikuisesti","rakastan sinua paljon",
+"miluji tě navždy","miluji tě moc","t'estimo per sempre","t'estimo molt","te dua përgjithmonë",
+"te dua shumë","te amo con todo mi corazón","te amo mi amor","eres mi amor","eres mi vida",
+"eres mi mundo","eres mi todo"
+];
+
+const TOTAL_LOVES=1000, VISIBLE_LOVES=75, loveSprites=[];
+function crearLove(texto){
+ const canvas=document.createElement("canvas"); canvas.width=300; canvas.height=70;
+ const ctx=canvas.getContext("2d"); ctx.font="bold 22px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+ ctx.fillStyle="#fff4a3"; ctx.shadowColor="#ffd000"; ctx.shadowBlur=9; ctx.fillText(texto,150,35);
+ const texture=new THREE.CanvasTexture(canvas); texture.minFilter=THREE.LinearFilter;
+ const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:.78}));
+ sprite.scale.set(7.5,1.8,1); return sprite;
+}
+for(let i=0;i<VISIBLE_LOVES;i++){
+ const sprite=crearLove(languages[i%languages.length]);
+ sprite.position.set((Math.random()-.5)*95,(Math.random()-.5)*65,(Math.random()-.5)*95);
+ scene.add(sprite); loveSprites.push(sprite);
+}
+let loveIndex=VISIBLE_LOVES;
+setInterval(()=>{
+ const sprite=loveSprites[loveIndex%VISIBLE_LOVES], phrase=languages[loveIndex%languages.length];
+ const canvas=sprite.material.map.image, ctx=canvas.getContext("2d");
+ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.font="bold 22px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+ ctx.fillStyle="#fff4a3"; ctx.shadowColor="#ffd000"; ctx.shadowBlur=9; ctx.fillText(phrase,150,35);
+ sprite.material.map.needsUpdate=true;
+ sprite.position.set((Math.random()-.5)*95,(Math.random()-.5)*65,(Math.random()-.5)*95);
+ loveIndex++; if(loveIndex>=TOTAL_LOVES) loveIndex=0;
+},300);
+
+/* 13 DE JUNIO */
+const anniversary=new THREE.Group();
+anniversary.add(new THREE.Mesh(new THREE.SphereGeometry(5.5,16,12),new THREE.MeshBasicMaterial({color:0xffc107})));
+const ring=new THREE.Mesh(new THREE.RingGeometry(7,7.6,48),new THREE.MeshBasicMaterial({color:0xffe082,transparent:true,opacity:.85,side:THREE.DoubleSide}));
+ring.rotation.x=Math.PI/2.4; anniversary.add(ring);
+const anniversaryText=crearTexto("13 DE JUNIO • NUESTRO CUMPLE MES",1000,130,40);
+anniversaryText.scale.set(27,3.5,1); anniversaryText.position.y=8; anniversary.add(anniversaryText);
+anniversary.userData.angle=0; anniversary.userData.radius=43; scene.add(anniversary);
+
+/* DESTELLOS */
+const sparkleCount=90, sparkleGeometry=new THREE.BufferGeometry(), sparklePositions=new Float32Array(sparkleCount*3);
+for(let i=0;i<sparkleCount;i++){
+ const r=4+Math.random()*15,a=Math.random()*Math.PI*2;
+ sparklePositions[i*3]=Math.cos(a)*r; sparklePositions[i*3+1]=(Math.random()-.5)*15; sparklePositions[i*3+2]=Math.sin(a)*r;
+}
+sparkleGeometry.setAttribute("position",new THREE.BufferAttribute(sparklePositions,3));
+scene.add(new THREE.Points(sparkleGeometry,new THREE.PointsMaterial({color:0xffffb3,size:1.7,transparent:true,opacity:.9})));
+
+/* CONTROLES */
+let rotX=0,rotY=0,targetX=0,targetY=0,cameraDistance=75;
+const pointers=new Map(); let dragging=false,previousX=0,previousY=0,pinchStart=0,zoomStart=75;
+function getPinchDistance(){
+ const p=[...pointers.values()]; if(p.length<2)return 0;
+ const dx=p[0].x-p[1].x,dy=p[0].y-p[1].y; return Math.sqrt(dx*dx+dy*dy);
+}
+renderer.domElement.addEventListener("pointerdown",e=>{
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); renderer.domElement.setPointerCapture(e.pointerId);
+ if(pointers.size===1){dragging=true;previousX=e.clientX;previousY=e.clientY;}
+ if(pointers.size===2){dragging=false;pinchStart=getPinchDistance();zoomStart=cameraDistance;}
+});
+renderer.domElement.addEventListener("pointermove",e=>{
+ if(!pointers.has(e.pointerId))return;
+ pointers.get(e.pointerId).x=e.clientX; pointers.get(e.pointerId).y=e.clientY;
+ if(pointers.size===1&&dragging){
+  targetY+=(e.clientX-previousX)*.004; targetX+=(e.clientY-previousY)*.004;
+  targetX=Math.max(-1.2,Math.min(1.2,targetX)); previousX=e.clientX; previousY=e.clientY;
+ }
+ if(pointers.size===2){
+  const current=getPinchDistance();
+  if(pinchStart>0){cameraDistance=zoomStart*pinchStart/current;cameraDistance=Math.max(35,Math.min(130,cameraDistance));}
+ }
+});
+function endPointer(e){
+ pointers.delete(e.pointerId);
+ if(pointers.size===0)dragging=false;
+ if(pointers.size===1){const p=[...pointers.values()][0];previousX=p.x;previousY=p.y;dragging=true;}
+}
+renderer.domElement.addEventListener("pointerup",endPointer);
+renderer.domElement.addEventListener("pointercancel",endPointer);
+renderer.domElement.addEventListener("wheel",e=>{
+ e.preventDefault();cameraDistance+=e.deltaY*.04;cameraDistance=Math.max(35,Math.min(130,cameraDistance));
+},{passive:false});
+
+window.addEventListener("resize",()=>{
+ camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));
+});
+
+/* ANIMACION */
+function animate(){
+ requestAnimationFrame(animate);
+ rotX+=(targetX-rotX)*.08;rotY+=(targetY-rotY)*.08;
+ scene.rotation.x=rotX;scene.rotation.y=rotY;
+ stars.rotation.y+=.00008;galaxy.rotation.y+=.00015;sunflowerSystem.rotation.y+=.0004;
+ sunflowerSystem.children.forEach(f=>f.rotation.z+=.004);
+ anniversary.userData.angle+=.002;
+ const a=anniversary.userData.angle,r=anniversary.userData.radius;
+ anniversary.position.x=Math.cos(a)*r;anniversary.position.z=Math.sin(a)*r;anniversary.position.y=Math.sin(a*1.7)*8;
+ anniversary.rotation.y+=.006;sparkles.rotation.y+=.0015;
+ camera.position.z=cameraDistance;
+ renderer.render(scene,camera);
+}
+animate();
+
+/* QUITAR CARGA */
+setTimeout(()=>{
+ const loading=document.getElementById("loading");loading.style.opacity="0";
+ setTimeout(()=>loading.style.display="none",1000);
+},1200);
+}
+</script>
+</body>
+</html>
